@@ -33,6 +33,20 @@ class FirestoreRepository {
     }
   }
 
+  Future<void> uploadData() async {
+    for (Cuisine cuisine in fake_app_data.fakeAppCuisines) {
+      await _firestore.collection("cuisines").add(cuisine.toJson());
+      print("uploaded cuisine: ${cuisine.name}");
+
+      for (Dish dish in cuisine.dishes) {
+        await _firestore.collection("dishes").add(dish.toJson());
+        print("uploaded dish: ${dish.name}");
+      }
+    }
+
+    uploadFAQs();
+  }
+
   Future<void> updateWithLocalData() async {
     List<Dish> updatedDishes =
         (await _firestore.collection("dishes").get()).docs.map((doc) {
