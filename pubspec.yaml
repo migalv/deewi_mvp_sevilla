@@ -1,0 +1,80 @@
+name: fake_app_v1
+description: A new Flutter project.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  calendar_strip: ^1.0.7
+  carousel_slider: ^2.3.1
+  cloud_firestore: ^0.14.3
+  cupertino_icons: ^1.0.0
+  firebase: ^7.3.3
+  firebase_analytics: ^6.2.0
+  firebase_auth: ^0.18.4
+  firebase_core: ^0.5.1
+  json_annotation: ^3.1.1
+  mask_text_input_formatter: ^1.1.0
+  oktoast: ^2.3.2
+  states_rebuilder: ^3.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^1.10.6
+  json_serializable: ^3.5.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+# The following section is specific to Flutter.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  assets:
+    - assets/images/cuisine_images/
+    - assets/images/dish_images/
+    # Africa
+    - assets/images/dish_images/africa/egipt/
+    - assets/images/dish_images/africa/morocco/
+    - assets/images/dish_images/africa/uganda/
+    # America
+    - assets/images/dish_images/america/canada/
+    - assets/images/dish_images/america/mexico/
+    - assets/images/dish_images/america/suriname/
+    # Asia
+    - assets/images/dish_images/asia/china/
+    - assets/images/dish_images/asia/india/
+    - assets/images/dish_images/asia/japan/
+    - assets/images/dish_images/asia/mongolia/
+    # Europe
+    - assets/images/dish_images/europe/belarus/
+    - assets/images/dish_images/europe/france/
+    - assets/images/dish_images/europe/greece/
+    - assets/images/dish_images/europe/spain/
+    # Oceania
+    - assets/images/dish_images/oceania/australia/
+    - assets/images/dish_images/oceania/new_guinea/
+    - assets/images/
+    - assets/icons/
