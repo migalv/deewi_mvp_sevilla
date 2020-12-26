@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:fake_app_v1/widgets/star_rating.dart';
+import 'package:mvp_sevilla/widgets/star_rating.dart';
 import 'package:flutter/material.dart';
 
 class ReviewCard extends StatelessWidget {

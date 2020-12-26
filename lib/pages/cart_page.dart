@@ -1,6 +1,6 @@
-import 'package:fake_app_v1/pages/order_confirmation_page.dart';
-import 'package:fake_app_v1/stores/cart.dart';
-import 'package:fake_app_v1/widgets/item_tile.dart';
+import 'package:mvp_sevilla/pages/order_confirmation_page.dart';
+import 'package:mvp_sevilla/stores/cart.dart';
+import 'package:mvp_sevilla/widgets/item_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 

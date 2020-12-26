@@ -1,5 +1,5 @@
-import 'package:fake_app_v1/models/dish_model.dart';
-import 'package:fake_app_v1/pages/dish_page.dart';
+import 'package:mvp_sevilla/models/dish_model.dart';
+import 'package:mvp_sevilla/pages/dish_page.dart';
 import 'package:flutter/material.dart';
 
 class DishCard extends StatelessWidget {

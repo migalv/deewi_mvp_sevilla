@@ -1,12 +1,12 @@
-import 'package:fake_app_v1/models/cuisine_model.dart';
-import 'package:fake_app_v1/models/dish_model.dart';
-import 'package:fake_app_v1/pages/cart_page.dart';
-import 'package:fake_app_v1/pages/home_page.dart';
-import 'package:fake_app_v1/widgets/cart_button.dart';
-import 'package:fake_app_v1/widgets/cart_fab.dart';
-import 'package:fake_app_v1/widgets/discount_countdown_bar.dart';
-import 'package:fake_app_v1/widgets/dish_card.dart';
-import 'package:fake_app_v1/widgets/more_info_buton.dart';
+import 'package:mvp_sevilla/models/cuisine_model.dart';
+import 'package:mvp_sevilla/models/dish_model.dart';
+import 'package:mvp_sevilla/pages/cart_page.dart';
+import 'package:mvp_sevilla/pages/home_page.dart';
+import 'package:mvp_sevilla/widgets/cart_button.dart';
+import 'package:mvp_sevilla/widgets/cart_fab.dart';
+import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
+import 'package:mvp_sevilla/widgets/dish_card.dart';
+import 'package:mvp_sevilla/widgets/more_info_buton.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 

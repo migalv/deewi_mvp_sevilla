@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_app_v1/models/dish_review.dart';
-import 'package:fake_app_v1/models/ingredient.dart';
+import 'package:mvp_sevilla/models/dish_review.dart';
+import 'package:mvp_sevilla/models/ingredient.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 

@@ -1,4 +1,4 @@
-import 'package:fake_app_v1/pages/home_page.dart';
+import 'package:mvp_sevilla/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 Route<dynamic> generateRoute(RouteSettings settings) {

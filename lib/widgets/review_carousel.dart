@@ -1,6 +1,6 @@
-import 'package:fake_app_v1/models/dish_review.dart';
-import 'package:fake_app_v1/widgets/review_card.dart';
-import 'package:fake_app_v1/widgets/star_rating.dart';
+import 'package:mvp_sevilla/models/dish_review.dart';
+import 'package:mvp_sevilla/widgets/review_card.dart';
+import 'package:mvp_sevilla/widgets/star_rating.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 

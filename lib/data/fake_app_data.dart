@@ -1,7 +1,7 @@
-import 'package:fake_app_v1/models/cuisine_model.dart';
-import 'package:fake_app_v1/models/dish_model.dart';
-import 'package:fake_app_v1/models/dish_review.dart';
-import 'package:fake_app_v1/models/ingredient.dart';
+import 'package:mvp_sevilla/models/cuisine_model.dart';
+import 'package:mvp_sevilla/models/dish_model.dart';
+import 'package:mvp_sevilla/models/dish_review.dart';
+import 'package:mvp_sevilla/models/ingredient.dart';
 
 final List<Cuisine> fakeAppCuisines = [
   Cuisine(

@@ -1,4 +1,4 @@
-package com.example.fake_app_v1
+package com.example.deewi_mvp_sevilla
 
 import io.flutter.embedding.android.FlutterActivity
 

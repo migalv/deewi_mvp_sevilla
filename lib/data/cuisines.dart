@@ -1,5 +1,5 @@
-import 'package:fake_app_v1/data/dishes.dart';
-import 'package:fake_app_v1/models/cuisine_model.dart';
+import 'package:mvp_sevilla/data/dishes.dart';
+import 'package:mvp_sevilla/models/cuisine_model.dart';
 
 final List<Cuisine> cuisines = [
   Cuisine(

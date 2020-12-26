@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:calendar_strip/calendar_strip.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_app_v1/core/utils.dart';
-import 'package:fake_app_v1/main.dart';
-import 'package:fake_app_v1/services/remote_config_service.dart';
-import 'package:fake_app_v1/stores/cart.dart';
-import 'package:fake_app_v1/widgets/discount_countdown_bar.dart';
-import 'package:fake_app_v1/widgets/item_tile.dart';
-import 'package:fake_app_v1/widgets/more_info_buton.dart';
-import 'package:fake_app_v1/widgets/my_box_shadow.dart';
-import 'package:fake_app_v1/widgets/secure_payment_badges.dart';
+import 'package:mvp_sevilla/core/utils.dart';
+import 'package:mvp_sevilla/main.dart';
+import 'package:mvp_sevilla/services/remote_config_service.dart';
+import 'package:mvp_sevilla/stores/cart.dart';
+import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
+import 'package:mvp_sevilla/widgets/item_tile.dart';
+import 'package:mvp_sevilla/widgets/more_info_buton.dart';
+import 'package:mvp_sevilla/widgets/my_box_shadow.dart';
+import 'package:mvp_sevilla/widgets/secure_payment_badges.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,7 +21,7 @@ import 'package:states_rebuilder/states_rebuilder.dart';
 import "dart:math";
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:fake_app_v1/js/fb_pixel.dart';
+import 'package:mvp_sevilla/js/fb_pixel.dart';
 
 class OrderConfirmationPage extends StatefulWidget {
   @override

@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:fake_app_v1/pages/faqs_page.dart';
+import 'package:mvp_sevilla/pages/faqs_page.dart';
 import 'package:flutter/material.dart';
 
 class MoreInfoButton extends StatelessWidget {

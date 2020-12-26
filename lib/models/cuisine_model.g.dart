@@ -13,23 +13,14 @@ Cuisine _$CuisineFromJson(Map<String, dynamic> json) {
         ?.map(
             (e) => e == null ? null : Dish.fromJson(e as Map<String, dynamic>))
         ?.toList(),
-    imagePath: json['image_path'] as String,
-    thumbnailImagePath: json['thumbnail_image_path'] as String,
+    imagePath: json['imagePath'] as String,
+    thumbnailImagePath: json['thumbnailImagePath'] as String,
   );
 }
 
-Map<String, dynamic> _$CuisineToJson(Cuisine instance) {
-  final val = <String, dynamic>{};
-
-  void writeNotNull(String key, dynamic value) {
-    if (value != null) {
-      val[key] = value;
-    }
-  }
-
-  writeNotNull('name', instance.name);
-  writeNotNull('dishes', instance.dishes?.map((e) => e?.toJson())?.toList());
-  writeNotNull('image_path', instance.imagePath);
-  writeNotNull('thumbnail_image_path', instance.thumbnailImagePath);
-  return val;
-}
+Map<String, dynamic> _$CuisineToJson(Cuisine instance) => <String, dynamic>{
+      'name': instance.name,
+      'dishes': instance.dishes,
+      'imagePath': instance.imagePath,
+      'thumbnailImagePath': instance.thumbnailImagePath,
+    };

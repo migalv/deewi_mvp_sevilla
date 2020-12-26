@@ -1,4 +1,4 @@
-import 'package:fake_app_v1/stores/cart.dart';
+import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:flutter/material.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 

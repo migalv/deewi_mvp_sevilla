@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fake_app_v1/data/fake_app_data.dart' as fake_app_data;
-import 'package:fake_app_v1/data/faqs.dart' as data_faqs;
-import 'package:fake_app_v1/models/cuisine_model.dart';
-import 'package:fake_app_v1/models/dish_model.dart';
+import 'package:mvp_sevilla/data/fake_app_data.dart' as fake_app_data;
+import 'package:mvp_sevilla/data/faqs.dart' as data_faqs;
+import 'package:mvp_sevilla/models/cuisine_model.dart';
+import 'package:mvp_sevilla/models/dish_model.dart';
 
 class FirestoreRepository {
   FirebaseFirestore _firestore = FirebaseFirestore.instance;

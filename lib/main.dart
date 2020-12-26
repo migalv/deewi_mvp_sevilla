@@ -1,6 +1,6 @@
-import 'package:fake_app_v1/pages/home_page.dart';
-import 'package:fake_app_v1/services/remote_config_service.dart';
-import 'package:fake_app_v1/stores/cart.dart';
+import 'package:mvp_sevilla/pages/home_page.dart';
+import 'package:mvp_sevilla/services/remote_config_service.dart';
+import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_analytics/observer.dart';
 import 'package:firebase_auth/firebase_auth.dart';

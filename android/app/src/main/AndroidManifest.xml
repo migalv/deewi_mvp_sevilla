@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.fake_app_v1">
+    package="com.example.deewi_mvp_sevilla">
    <application
-        android:label="fake_app_v1"
+        android:label="deewi_mvp_sevilla"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

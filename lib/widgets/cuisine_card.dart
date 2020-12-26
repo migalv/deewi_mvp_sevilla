@@ -1,5 +1,5 @@
-import 'package:fake_app_v1/models/cuisine_model.dart';
-import 'package:fake_app_v1/pages/cuisine_page.dart';
+import 'package:mvp_sevilla/models/cuisine_model.dart';
+import 'package:mvp_sevilla/pages/cuisine_page.dart';
 import 'package:flutter/material.dart';
 
 class CuisineCard extends StatelessWidget {

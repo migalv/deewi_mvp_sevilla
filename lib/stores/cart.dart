@@ -1,7 +1,7 @@
-import 'package:fake_app_v1/core/utils.dart';
-import 'package:fake_app_v1/js/fb_pixel.dart';
-import 'package:fake_app_v1/main.dart';
-import 'package:fake_app_v1/models/dish_model.dart';
+import 'package:mvp_sevilla/core/utils.dart';
+import 'package:mvp_sevilla/js/fb_pixel.dart';
+import 'package:mvp_sevilla/main.dart';
+import 'package:mvp_sevilla/models/dish_model.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 class Cart {
