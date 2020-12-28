@@ -1,0 +1,15 @@
+name: mvp_sevilla_firebase_functions
+description: MVP Sevilla Firebase Functions
+version: 1.0.0
+
+environment:
+  sdk: '>=2.0.0-dev <3.0.0'
+
+dependencies:
+  # Firebase Functions bindings
+  firebase_functions_interop: ^1.0.2
+
+dev_dependencies:
+  # Needed to compile Dart to valid Node.js module.
+  build_runner:
+  build_node_compilers:
