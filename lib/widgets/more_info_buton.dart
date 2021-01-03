@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class MoreInfoButton extends StatelessWidget {
   final double maxWidth;
 
-  const MoreInfoButton({Key key, this.maxWidth = 120.0}) : super(key: key);
+  const MoreInfoButton({Key key, this.maxWidth = 136.0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:calendar_strip/calendar_strip.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mvp_sevilla/core/utils.dart';
+import 'package:mvp_sevilla/js/stripe.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mvp_sevilla/main.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
@@ -812,18 +814,20 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
                         state.didChange(selectedDate);
 
-                        orderDoc.set(
-                          {
-                            "delivery_time":
-                                selectedDate.millisecondsSinceEpoch,
-                            "client_uid":
-                                FirebaseAuth.instance?.currentUser?.uid,
-                            "total_price": _rmCart.state.totalPrice,
-                            "item_list": _itemList,
-                            "created_at": FieldValue.serverTimestamp(),
-                          },
-                          SetOptions(merge: true),
-                        );
+                        if (noEvents == false) {
+                          orderDoc.set(
+                            {
+                              "delivery_time":
+                                  selectedDate.millisecondsSinceEpoch,
+                              "client_uid":
+                                  FirebaseAuth.instance?.currentUser?.uid,
+                              "total_price": _rmCart.state.totalPrice,
+                              "item_list": _itemList,
+                              "created_at": FieldValue.serverTimestamp(),
+                            },
+                            SetOptions(merge: true),
+                          );
+                        }
 
                         setState(() => _orderTime = selectedDate);
                       }
@@ -949,105 +953,44 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
             },
           )
           .toList();
-      if (noEvents == false) {
-        logFBPixelEvents(
-          "track",
-          "Purchase",
-          FBParams(
-            currency: "EUR",
-            value: cart.totalPrice,
-          ),
-        );
-      }
 
-      FirebaseAnalytics().logEcommercePurchase(
-        value: cart.totalPrice,
-        currency: "EUR",
-      );
-
-      orderDoc.set(
-        {
-          "items": itemList,
-          "client_address": _contactInfoControllers["address"].text,
-          "client_name": _contactInfoControllers["name"].text,
-          "client_email": _contactInfoControllers["email"].text,
-          "client_phone": _contactInfoControllers["phone"].text,
-          "total_price": cart.totalPrice,
-          "delivery_time": _orderTime.millisecondsSinceEpoch,
-          "created_at": FieldValue.serverTimestamp(),
-          "client_uid": FirebaseAuth.instance?.currentUser?.uid,
-        },
-      );
-
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(
-              "¡Gracias por pedir en Deewi!",
-              textAlign: TextAlign.center,
-            ),
-            content: Container(
-              constraints: BoxConstraints(maxWidth: 300.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Actualmente aún estamos en construcción 🏗️",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Y nos ayudaría un montón conocer tu opinión.",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Puede ser que te contactemos para charlar unos minutos 😊",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8.0),
-                  Text(
-                    "Como ya nos conocemos, te dejamos este código:",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8.0),
-                  FittedBox(
-                    child: Text(
-                      "SOYDELOSPRIMEROS",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  SizedBox(height: 8.0),
-                  Text(
-                    "Utilizalo en tu siguiente pedido y tendremos un regalo para tí.",
-                    style: Theme.of(context).textTheme.caption,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              FlatButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                  rmCart.setState((cart) => cart.clear());
-                },
-                child: Text("Cerrar"),
-              ),
-            ],
-          );
-        },
-      );
+      _redirectToCheckout();
     } else
       setState(() => _formHasErrors = true);
   }
 
+  void _redirectToCheckout() async {
+    final callable = FirebaseFunctions.instanceFor(region: 'europe-west2')
+        .httpsCallable("getStripeApiKey");
+
+    try {
+      final response = await callable();
+      if (response.data["error"] == null) {
+        final stripeApiKey = response.data["api_key"];
+        Stripe stripe = Stripe(stripeApiKey);
+
+        stripe.redirectToCheckout(
+          CheckoutOptions(
+            mode: 'payment',
+            lineItems: [
+              LineItem(
+                price: "price_1I5APtLqOYf08FrULvWJMUVR",
+                quantity: 1,
+              )
+            ],
+            successUrl: 'https://mvp-sevilla.web.app//#/',
+            cancelUrl: 'https://mvp-sevilla.web.app//#/',
+          ),
+        );
+      }
+    } catch (e, s) {
+      print("Error: ${e.toString()}");
+      print("StackTrace: ${s.toString()}");
+    }
+  }
+
   void _registerTextField(String key) {
-    if (_contactInfoControllers[key].text != "") {
+    if (_contactInfoControllers[key].text != "" && noEvents == false) {
       orderDoc.set(
         {
           "client_$key": _contactInfoControllers[key].text,
