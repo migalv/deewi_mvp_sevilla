@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics()),
       ],
       theme: DeewiTheme().themeData,
-      initialRoute: RouteNames.HOME_ROUTE,
+      initialRoute: RouteNames.CANCEL_ROUTE,
       onGenerateRoute: RouteGenerator.generateRoute,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),

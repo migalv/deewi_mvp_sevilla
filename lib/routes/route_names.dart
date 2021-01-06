@@ -4,4 +4,6 @@ abstract class RouteNames {
   static const String DISH_ROUTE = '/dish';
   static const String FAQS_ROUTE = '/faqs';
   static const String CHECKOUT_ROUTE = '/checkout';
+  static const String SUCCESS_ROUTE = '/success';
+  static const String CANCEL_ROUTE = '/cancel';
 }

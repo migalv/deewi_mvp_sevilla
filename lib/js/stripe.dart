@@ -21,11 +21,14 @@ class CheckoutOptions {
 
   external String get cancelUrl;
 
+  external String get customerEmail;
+
   external factory CheckoutOptions({
     List<LineItem> lineItems,
     String mode,
     String successUrl,
     String cancelUrl,
+    String customerEmail,
   });
 }
 

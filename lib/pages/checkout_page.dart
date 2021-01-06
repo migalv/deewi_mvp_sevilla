@@ -6,6 +6,7 @@ import 'package:mvp_sevilla/core/utils.dart';
 import 'package:mvp_sevilla/js/stripe.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mvp_sevilla/main.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
@@ -25,12 +26,12 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mvp_sevilla/js/fb_pixel.dart';
 
-class OrderConfirmationPage extends StatefulWidget {
+class CheckoutPage extends StatefulWidget {
   @override
-  _OrderConfirmationPageState createState() => _OrderConfirmationPageState();
+  _CheckoutPageState createState() => _CheckoutPageState();
 }
 
-class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
+class _CheckoutPageState extends State<CheckoutPage> {
   DateTime _orderTime;
 
   final _formKey = GlobalKey<FormState>();
@@ -39,12 +40,17 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
   bool _isContactInfoEventSent;
 
-  final List<String> _contactInfoKeys = const [
-    "name",
-    "phone",
-    "email",
-    "address",
+  static const List<String> _contactInfoKeys = const [
+    NAME_KEY,
+    PHONE_KEY,
+    EMAIL_KEY,
+    ADDRESS_KEY,
   ];
+
+  static const String NAME_KEY = "name";
+  static const String PHONE_KEY = "phone";
+  static const String EMAIL_KEY = "email";
+  static const String ADDRESS_KEY = "address";
 
   Map<String, bool> _contactInfoEvents = {};
 
@@ -201,12 +207,19 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Image.asset(
-            "assets/images/home_banner.jpg",
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF701A98),
+                  Color(0xFFDF4577),
+                ],
+              ),
+            ),
             width: _screenWidth,
             height: _screenHeight,
-            fit: BoxFit.cover,
-            alignment: Alignment(0.0, -0.45),
           ),
           _buildLogo(),
           Center(child: _buildMainContainer()),
@@ -978,8 +991,9 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
                 quantity: 1,
               )
             ],
-            successUrl: 'https://mvp-sevilla.web.app//#/',
-            cancelUrl: 'https://mvp-sevilla.web.app//#/',
+            customerEmail: _contactInfoControllers[EMAIL_KEY].text,
+            successUrl: Uri.base.path + RouteNames.SUCCESS_ROUTE,
+            cancelUrl: Uri.base.path + RouteNames.CANCEL_ROUTE,
           ),
         );
       }

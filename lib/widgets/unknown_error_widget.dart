@@ -8,7 +8,7 @@ class UnknownErrorWidget extends StatelessWidget {
         children: [
           Image.network("assets/assets/icons/error.svg", height: 64.0),
           Text(
-            "An unknown error ocurred",
+            "Ocurrió un error inesperado",
             style: Theme.of(context).textTheme.headline6,
           ),
         ],
