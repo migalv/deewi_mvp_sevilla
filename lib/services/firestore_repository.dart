@@ -35,13 +35,14 @@ class FirestoreRepository {
 
   Future<void> uploadData() async {
     for (Cuisine cuisine in fake_app_data.fakeAppCuisines) {
-      await _firestore.collection("cuisines").add(cuisine.toJson());
-      print("uploaded cuisine: ${cuisine.name}");
-
       for (Dish dish in cuisine.dishes) {
-        await _firestore.collection("dishes").add(dish.toJson());
+        final doc = await _firestore.collection("dishes").add(dish.toJson());
+        dish.id = doc.id;
         print("uploaded dish: ${dish.name}");
       }
+
+      await _firestore.collection("cuisines").add(cuisine.toJson());
+      print("uploaded cuisine: ${cuisine.name}");
     }
 
     uploadFAQs();

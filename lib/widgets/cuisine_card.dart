@@ -1,6 +1,6 @@
 import 'package:mvp_sevilla/models/cuisine_model.dart';
-import 'package:mvp_sevilla/pages/cuisine_page.dart';
 import 'package:flutter/material.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 
 class CuisineCard extends StatelessWidget {
   final Cuisine cuisine;
@@ -18,17 +18,12 @@ class CuisineCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         elevation: 3,
         child: InkWell(
-          onTap: () => Navigator.push(
+          onTap: () => Navigator.pushNamed(
             context,
-            MaterialPageRoute(
-              builder: (_) => CuisinePage(
-                cuisine: cuisine,
-                dishes: cuisine.dishes,
-              ),
-              settings: RouteSettings(
-                  name: "Cuisine Page",
-                  arguments: {"id": cuisine.id, "name": cuisine.name}),
-            ),
+            Uri(
+              path: RouteNames.CUISINE_ROUTE,
+              queryParameters: {"id": cuisine.id},
+            ).toString(),
           ),
           child: Ink(
             decoration: BoxDecoration(

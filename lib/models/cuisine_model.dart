@@ -35,7 +35,9 @@ class Cuisine {
     Cuisine cuisine = Cuisine.fromJson(doc.data());
     cuisine.id = doc.id;
 
-    for (Dish dish in cuisine.dishes) dish.cuisineName = cuisine.name;
+    for (Dish dish in cuisine.dishes) {
+      dish.cuisineName = cuisine.name;
+    }
 
     return cuisine;
   }
