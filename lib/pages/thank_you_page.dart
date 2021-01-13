@@ -106,7 +106,7 @@ class ThankYouPage extends StatelessWidget {
   }
 
   // METHODS
-  void _goHome(BuildContext context) => () => Navigator.pushReplacementNamed(
+  void _goHome(BuildContext context) => Navigator.pushReplacementNamed(
         context,
         RouteNames.HOME_ROUTE,
       );

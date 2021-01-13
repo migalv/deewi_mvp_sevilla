@@ -94,9 +94,8 @@ class PaymentErrorPage extends StatelessWidget {
   }
 
   // METHODS
-  void _goToCheckout(BuildContext context) =>
-      () => Navigator.pushReplacementNamed(
-            context,
-            RouteNames.CHECKOUT_ROUTE,
-          );
+  void _goToCheckout(BuildContext context) => Navigator.pushReplacementNamed(
+        context,
+        RouteNames.CHECKOUT_ROUTE,
+      );
 }
