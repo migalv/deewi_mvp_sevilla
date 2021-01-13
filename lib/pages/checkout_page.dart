@@ -6,6 +6,7 @@ import 'package:mvp_sevilla/core/utils.dart';
 import 'package:mvp_sevilla/js/stripe.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mvp_sevilla/main.dart';
+import 'package:mvp_sevilla/models/payment_status.dart';
 import 'package:mvp_sevilla/routes/route_names.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
@@ -40,12 +41,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   bool _isContactInfoEventSent;
 
+  bool _isLoadingCheckout;
+
   static const List<String> _contactInfoKeys = const [
     NAME_KEY,
     PHONE_KEY,
     EMAIL_KEY,
     ADDRESS_KEY,
   ];
+
+  FirebaseFunctions _firebaseFunctionsInstance;
 
   static const String NAME_KEY = "name";
   static const String PHONE_KEY = "phone";
@@ -96,6 +101,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   void initState() {
+    _firebaseFunctionsInstance =
+        FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+    _firebaseFunctionsInstance.useFunctionsEmulator(
+      origin: useEmulator ? "http://localhost:5001" : null,
+    );
+
     FirebaseAnalytics().setCurrentScreen(
       screenName: "Order Confirmation Page",
       screenClassOverride: "OrderConfirmationPage",
@@ -111,6 +123,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
         FBParams(),
       );
     }
+
+    _isLoadingCheckout = false;
 
     // Initialize contact info maps
     for (final key in _contactInfoKeys) {
@@ -602,7 +616,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           padding: const EdgeInsets.all(16.0),
           child: Material(
             child: InkWell(
-              onTap: () => _pay(rmCart),
+              onTap: _isLoadingCheckout ? null : () => _pay(rmCart),
               child: Ink(
                 padding:
                     const EdgeInsets.symmetric(vertical: 8.0, horizontal: 40.0),
@@ -610,24 +624,30 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.payment,
-                      color: Colors.white,
-                      size: 24.0,
-                    ),
-                    SizedBox(width: 8.0),
-                    Text(
-                      "Pagar",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline5
-                          .copyWith(color: Colors.white),
-                    ),
-                  ],
-                ),
+                child: _isLoadingCheckout
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.payment,
+                            color: Colors.white,
+                            size: 24.0,
+                          ),
+                          SizedBox(width: 8.0),
+                          Text(
+                            "Pagar",
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline5
+                                .copyWith(color: Colors.white),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -967,40 +987,81 @@ class _CheckoutPageState extends State<CheckoutPage> {
           )
           .toList();
 
+      orderDoc.set(
+        {
+          "items": itemList,
+          "client_address": _contactInfoControllers["address"].text,
+          "client_name": _contactInfoControllers["name"].text,
+          "client_email": _contactInfoControllers["email"].text,
+          "client_phone": _contactInfoControllers["phone"].text,
+          "total_price": cart.totalPrice,
+          "delivery_time": _orderTime.millisecondsSinceEpoch,
+          "created_at": FieldValue.serverTimestamp(),
+          "client_uid": FirebaseAuth.instance?.currentUser?.uid,
+        },
+        SetOptions(merge: true),
+      );
+
       _redirectToCheckout();
     } else
       setState(() => _formHasErrors = true);
   }
 
   void _redirectToCheckout() async {
-    final callable = FirebaseFunctions.instanceFor(region: 'europe-west2')
-        .httpsCallable("getStripeApiKey");
-
     try {
-      final response = await callable();
-      if (response.data["error"] == null) {
-        final stripeApiKey = response.data["api_key"];
-        Stripe stripe = Stripe(stripeApiKey);
+      setState(() {
+        _isLoadingCheckout = true;
+      });
+      final response = await _firebaseFunctionsInstance
+          .httpsCallable("createStripeCheckoutSession")
+          .call({
+        "is_test": debugMode,
+        "session_params": {
+          "payment_method_types": ['card'],
+          "mode": 'payment',
+          "line_items": [
+            {
+              "price": "price_1I5APtLqOYf08FrULvWJMUVR",
+              "quantity": 1,
+            }
+          ],
+          "customer_email": _contactInfoControllers[EMAIL_KEY].text,
+          "success_url": Uri.base
+              .toString()
+              .replaceAll("/checkout", RouteNames.SUCCESS_ROUTE),
+          "cancel_url": Uri.base.toString(),
+        }
+      });
 
-        stripe.redirectToCheckout(
-          CheckoutOptions(
-            mode: 'payment',
-            lineItems: [
-              LineItem(
-                price: "price_1I5APtLqOYf08FrULvWJMUVR",
-                quantity: 1,
-              )
-            ],
-            customerEmail: _contactInfoControllers[EMAIL_KEY].text,
-            successUrl: Uri.base.path + RouteNames.SUCCESS_ROUTE,
-            cancelUrl: Uri.base.path + RouteNames.CANCEL_ROUTE,
-          ),
+      if (response.data["error"] == null) {
+        final String checkoutSessionId = response.data["session_id"];
+        Stripe stripe = Stripe(
+          debugMode
+              ? STRIPE_PUBLISHABLE_TEST_API_KEY
+              : STRIPE_PUBLISHABLE_API_KEY,
         );
+
+        orderDoc.set(
+          {
+            "stripe_checkout_session_id": checkoutSessionId,
+            "payment_status": PaymentStatus.waiting,
+          },
+          SetOptions(merge: true),
+        );
+
+        await stripe
+            .redirectToCheckout(CheckoutOptions(sessionId: checkoutSessionId));
+      } else {
+        print(response.data["error"]);
       }
     } catch (e, s) {
       print("Error: ${e.toString()}");
       print("StackTrace: ${s.toString()}");
     }
+
+    setState(() {
+      _isLoadingCheckout = true;
+    });
   }
 
   void _registerTextField(String key) {

@@ -11,6 +11,7 @@ import 'package:mvp_sevilla/theme/deewi_theme.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 
 const bool debugMode = true;
+const bool useEmulator = false;
 bool noEvents = false;
 
 Future<void> main() async {
@@ -44,7 +45,7 @@ class MyApp extends StatelessWidget {
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics()),
       ],
       theme: DeewiTheme().themeData,
-      initialRoute: RouteNames.CANCEL_ROUTE,
+      initialRoute: RouteNames.HOME_ROUTE,
       onGenerateRoute: RouteGenerator.generateRoute,
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),

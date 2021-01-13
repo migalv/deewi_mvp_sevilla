@@ -3,11 +3,16 @@ library stripe;
 
 import 'package:js/js.dart';
 
+const String STRIPE_PUBLISHABLE_TEST_API_KEY =
+    "pk_test_51Hqh6KLqOYf08FrUN84j9LT8dCAZaBHCZ6ds5iIyrgoCVGJpdwxPHQ40XT7UNXMHRrTQHVgWD8l8EumGpDhhBLgr00nlb7WFAM";
+const String STRIPE_PUBLISHABLE_API_KEY =
+    "pk_live_51Hqh6KLqOYf08FrU0G4JnZMHP582FQCEYSrox1QvfkzFH3P1B069mXnpahJLTDIVqilpBknA1alxUIIzHHAKHq7F00plQ9UXTB";
+
 @JS()
 class Stripe {
   external Stripe(String key);
 
-  external redirectToCheckout(CheckoutOptions options);
+  external Future<void> redirectToCheckout(CheckoutOptions options);
 }
 
 @JS()
@@ -23,7 +28,10 @@ class CheckoutOptions {
 
   external String get customerEmail;
 
+  external String get sessionId;
+
   external factory CheckoutOptions({
+    String sessionId,
     List<LineItem> lineItems,
     String mode,
     String successUrl,

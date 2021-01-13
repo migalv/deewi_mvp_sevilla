@@ -5,7 +5,15 @@ import 'package:mvp_sevilla/models/cuisine_model.dart';
 import 'package:mvp_sevilla/models/dish_model.dart';
 
 class FirestoreRepository {
-  FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore _firestore;
+
+  FirestoreRepository({bool useEmulator = false}) {
+    _firestore = FirebaseFirestore.instance;
+    _firestore.settings = Settings(
+      host: useEmulator ? "localhost:8080" : null,
+      sslEnabled: !useEmulator,
+    );
+  }
 
   Future<void> update() async {
     List<Dish> firestoreDishes = (await _firestore.collection("dishes").get())
