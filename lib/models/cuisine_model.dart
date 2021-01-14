@@ -10,6 +10,7 @@ class Cuisine {
   @JsonKey(ignore: true)
   String id;
   final String name;
+  @JsonKey(toJson: _dishesToJson, fromJson: _dishesFromJson)
   List<Dish> dishes;
   final String imagePath;
   final String thumbnailImagePath;
@@ -23,6 +24,7 @@ class Cuisine {
   }) {
     for (Dish dish in dishes) {
       dish.cuisineName = name;
+      dish.cuisineId = id;
     }
   }
 
@@ -30,6 +32,12 @@ class Cuisine {
       _$CuisineFromJson(json);
 
   Map<String, dynamic> toJson() => _$CuisineToJson(this);
+
+  static List<Map<String, dynamic>> _dishesToJson(List<Dish> dishes) =>
+      dishes.map((dish) => dish.toReducedJson()).toList();
+
+  static List<Dish> _dishesFromJson(List json) =>
+      json.map((jsonDish) => Dish.fromJson(jsonDish)).toList();
 
   factory Cuisine.fromFirestore(DocumentSnapshot doc) {
     Cuisine cuisine = Cuisine.fromJson(doc.data());

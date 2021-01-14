@@ -9,10 +9,12 @@ class FirestoreRepository {
 
   FirestoreRepository({bool useEmulator = false}) {
     _firestore = FirebaseFirestore.instance;
-    _firestore.settings = Settings(
-      host: useEmulator ? "localhost:8080" : null,
-      sslEnabled: !useEmulator,
-    );
+    if (useEmulator) {
+      _firestore.settings = Settings(
+        host: "localhost:8080",
+        sslEnabled: false,
+      );
+    }
   }
 
   Future<void> update() async {
@@ -42,16 +44,17 @@ class FirestoreRepository {
   }
 
   Future<void> uploadData() async {
-    for (Cuisine cuisine in fake_app_data.fakeAppCuisines) {
-      for (Dish dish in cuisine.dishes) {
-        final doc = await _firestore.collection("dishes").add(dish.toJson());
-        dish.id = doc.id;
-        print("uploaded dish: ${dish.name}");
-      }
-
-      await _firestore.collection("cuisines").add(cuisine.toJson());
-      print("uploaded cuisine: ${cuisine.name}");
+    // for (Cuisine cuisine in fake_app_data.fakeAppCuisines) {
+    Cuisine cuisine = fake_app_data.fakeAppCuisines.first;
+    for (Dish dish in cuisine.dishes) {
+      final doc = await _firestore.collection("dishes").add(dish.toJson());
+      dish.id = doc.id;
+      print("uploaded dish: ${dish.name}");
     }
+
+    await _firestore.collection("cuisines").add(cuisine.toJson());
+    print("uploaded cuisine: ${cuisine.name}");
+    // }
 
     uploadFAQs();
   }
@@ -172,11 +175,26 @@ class FirestoreRepository {
   }
 
   Future<List<Cuisine>> downloadData() async {
-    QuerySnapshot snapshot =
+    final QuerySnapshot snapshot =
         await _firestore.collection("cuisines").orderBy("name").get();
 
-    List<Cuisine> cuisines =
+    final List<Cuisine> cuisines =
         snapshot.docs.map((doc) => Cuisine.fromFirestore(doc)).toList();
+
+    for (final cuisine in cuisines) {
+      final List<String> dishIds =
+          cuisine.dishes.map((dish) => dish.id).toList();
+      cuisine.dishes = [];
+      for (final dishId in dishIds) {
+        final DocumentSnapshot dishDoc =
+            await _firestore.collection("dishes").doc(dishId).get();
+
+        if (dishDoc.exists) {
+          final Dish dish = Dish.fromFirestore(dishDoc);
+          cuisine.dishes.add(dish);
+        }
+      }
+    }
 
     return cuisines;
   }

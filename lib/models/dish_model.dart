@@ -41,11 +41,15 @@ class Dish {
   /// The path to an image of the dish from a side view perspective
   final String sideViewImage;
 
+  final String stripePriceId;
+
   List<DishReview> _reviews;
 
   List<DishReview> get reviews => _reviews;
 
   String cuisineName;
+
+  String cuisineId;
 
   Set<String> _allergens;
 
@@ -54,22 +58,27 @@ class Dish {
   Dish({
     this.id,
     @required this.name,
-    @required this.description,
     @required this.price,
     @required this.mainImagePath,
-    @required this.ingredients,
+    this.description,
+    this.ingredients,
     this.cuisineName,
+    this.cuisineId,
     this.isSoldInUnits = false,
     this.sideViewImage,
     this.thumbnailImagePath,
     this.history,
     this.howToEat,
+    this.stripePriceId,
     List<DishReview> reviews = const [],
   }) {
     _allergens = {};
     _reviews = reviews;
-    for (var ingredient in ingredients) {
-      if (ingredient.allergens != null) _allergens.addAll(ingredient.allergens);
+    if (ingredients != null) {
+      for (var ingredient in ingredients) {
+        if (ingredient.allergens != null)
+          _allergens.addAll(ingredient.allergens);
+      }
     }
   }
 
@@ -77,6 +86,7 @@ class Dish {
         "name": name,
         "price": price,
         "cuisine_name": cuisineName,
+        "stripe_price_id": stripePriceId,
       };
 
   @override
@@ -89,6 +99,14 @@ class Dish {
 
   factory Dish.fromJson(Map<String, dynamic> json) => _$DishFromJson(json);
   Map<String, dynamic> toJson() => _$DishToJson(this);
+
+  Map<String, dynamic> toReducedJson() => {
+        "id": id,
+        "name": name,
+        "price": price,
+        "main_image_path": mainImagePath,
+        "thumbnail_image_path": thumbnailImagePath,
+      };
 
   factory Dish.fromFirestore(DocumentSnapshot doc) {
     Dish dish = Dish.fromJson(doc.data());

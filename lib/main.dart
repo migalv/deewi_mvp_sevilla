@@ -1,5 +1,6 @@
 import 'package:mvp_sevilla/routes/route_names.dart';
 import 'package:mvp_sevilla/routes/router.dart';
+import 'package:mvp_sevilla/services/firestore_repository.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -11,7 +12,7 @@ import 'package:mvp_sevilla/theme/deewi_theme.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 
 const bool debugMode = true;
-const bool useEmulator = false;
+const bool useEmulator = true;
 bool noEvents = false;
 
 Future<void> main() async {
@@ -24,6 +25,14 @@ Future<void> main() async {
     FirebaseAnalytics().setAnalyticsCollectionEnabled(false);
     noEvents = true;
   }
+
+  FirestoreRepository firestoreRepository =
+      FirestoreRepository(useEmulator: useEmulator);
+
+  await firestoreRepository.deleteCuisines();
+  await firestoreRepository.deleteDishes();
+  await firestoreRepository.uploadData();
+  // await firestoreRepository.update();
 
   if (debugMode) {
     FirebaseAnalytics().setAnalyticsCollectionEnabled(false);
