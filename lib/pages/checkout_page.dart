@@ -976,20 +976,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     if (isFormValid) {
-      List<Map> itemList;
-
-      itemList = cart.dishes.entries
-          .map(
-            (entry) => {
-              "units": entry.value,
-              "dish": entry.key.toOrderItem(),
-            },
-          )
-          .toList();
-
       orderDoc.set(
         {
-          "items": itemList,
+          "items": _itemList,
           "client_address": _contactInfoControllers["address"].text,
           "client_name": _contactInfoControllers["name"].text,
           "client_email": _contactInfoControllers["email"].text,
@@ -1019,12 +1008,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
         "session_params": {
           "payment_method_types": ['card'],
           "mode": 'payment',
-          "line_items": [
-            {
-              "price": "price_1I5APtLqOYf08FrULvWJMUVR",
-              "quantity": 1,
-            }
-          ],
+          "line_items": _itemList
+              .map((item) => {
+                    "price": item["dish"]["stripe_price_id"],
+                    "quantity": item["units"],
+                  })
+              .toList(),
           "customer_email": _contactInfoControllers[EMAIL_KEY].text,
           "success_url": Uri.base
               .toString()
