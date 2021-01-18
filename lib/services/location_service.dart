@@ -40,16 +40,18 @@ class LocationService {
       serviceEnabled = await location.requestService();
       if (serviceEnabled == false) {
         return LocationServiceResponse(
-            LocationPermissionsStatus.SERVICE_DISABLED);
+          LocationPermissionsStatus.SERVICE_DISABLED,
+        );
       }
     }
 
     permissionGranted = await location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
+    if (permissionGranted != PermissionStatus.granted) {
       permissionGranted = await location.requestPermission();
       if (permissionGranted != PermissionStatus.granted) {
         return LocationServiceResponse(
-            LocationPermissionsStatus.PERMISSIONS_DENIED);
+          LocationPermissionsStatus.PERMISSIONS_DENIED,
+        );
       }
     }
 
@@ -59,8 +61,10 @@ class LocationService {
     _longitude = locationData.longitude;
     _lastFetch = DateTime.now();
 
-    return LocationServiceResponse(LocationPermissionsStatus.OK,
-        locationData: locationData);
+    return LocationServiceResponse(
+      LocationPermissionsStatus.OK,
+      locationData: locationData,
+    );
   }
 }
 

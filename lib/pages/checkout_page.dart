@@ -12,6 +12,7 @@ import 'package:mvp_sevilla/services/location_service.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
+import 'package:mvp_sevilla/widgets/google_map.dart';
 import 'package:mvp_sevilla/widgets/item_tile.dart';
 import 'package:mvp_sevilla/widgets/more_info_buton.dart';
 import 'package:mvp_sevilla/widgets/my_box_shadow.dart';
@@ -78,7 +79,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   TextStyle _titleTextStyle;
 
-  bool _isDoingReverseGeocoding;
+  bool _waitingGeocodingResponse;
+  gm.LatLng _location;
+
+  double _locationLat;
+  double _locationLng;
 
   // Widget measures
 
@@ -129,7 +134,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     }
 
-    _isDoingReverseGeocoding = false;
+    _waitingGeocodingResponse = false;
     _isLoadingCheckout = false;
 
     // Initialize contact info maps
@@ -141,9 +146,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     final geocoder = gm.Geocoder();
 
+    // Initialize the location
     locationService.getLocation().then((response) async {
       if (response.status == LocationPermissionsStatus.OK) {
-        setState(() => _isDoingReverseGeocoding = true);
+        setState(() {
+          _location = gm.LatLng(
+            response.locationData.latitude,
+            response.locationData.longitude,
+          );
+          _locationLat = _location.lat;
+          _locationLng = _location.lng;
+          _waitingGeocodingResponse = true;
+        });
         geocoder.geocode(
           gm.GeocoderRequest()
             ..location = gm.LatLng(
@@ -155,7 +169,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
               if (results[0] != null) {
                 setState(() {
                   _contactInfoControllers[ADDRESS_KEY].text =
-                      results[1].formattedAddress;
+                      results[0].formattedAddress;
+                  _registerTextField(ADDRESS_KEY);
                 });
               } else {
                 print("No results found");
@@ -163,7 +178,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             } else {
               print("Geocoder failed due to: $status");
             }
-            setState(() => _isDoingReverseGeocoding = false);
+            setState(() => _waitingGeocodingResponse = false);
           },
         );
       } else {
@@ -374,9 +389,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             _buildDeliveryTimeSection(),
             SizedBox(height: 16.0),
             _buildLocationSection(),
-            _buildOrderDetailsContainer(),
             SizedBox(height: 16.0),
             _buildContactSection(),
+            _buildOrderDetailsContainer(),
           ],
         ),
       );
@@ -522,7 +537,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         Container(
           constraints: BoxConstraints(maxWidth: _textFieldMaxWidth),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+            padding: const EdgeInsets.fromLTRB(0.0, 16.0, 0.0, 4.0),
             child: TextFormField(
               controller: _contactInfoControllers[ADDRESS_KEY],
               expands: false,
@@ -539,8 +554,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onChanged: (value) {
                 Timer _debounce = _contactInfoTimers[ADDRESS_KEY];
                 if (_debounce?.isActive ?? false) _debounce.cancel();
-                _contactInfoTimers[ADDRESS_KEY] = Timer(Duration(seconds: 1),
-                    () => _registerTextField(ADDRESS_KEY));
+                _contactInfoTimers[ADDRESS_KEY] = Timer(
+                  Duration(seconds: 1),
+                  () {
+                    _registerTextField(ADDRESS_KEY);
+                    _updateLocationOnMap(value);
+                  },
+                );
               },
               keyboardType: TextInputType.streetAddress,
               validator: (value) {
@@ -550,11 +570,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
             ),
           ),
         ),
-        _isDoingReverseGeocoding
+        _waitingGeocodingResponse
             ? Padding(
                 padding:
                     const EdgeInsets.only(left: iconButtonWidth, right: 16.0),
                 child: LinearProgressIndicator(),
+              )
+            : Container(),
+        _locationLat != null && _locationLng != null
+            ? Container(
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                constraints: BoxConstraints(
+                  maxHeight: 300.0,
+                ),
+                child: GoogleMap(
+                  latitude: _locationLat,
+                  longitude: _locationLng,
+                ),
               )
             : Container(),
       ],
@@ -1123,6 +1155,33 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _isContactInfoEventSent = true;
       }
     }
+  }
+
+  void _updateLocationOnMap(String newAddress) {
+    final geocoder = gm.Geocoder();
+    setState(() => _waitingGeocodingResponse = true);
+    geocoder.geocode(
+      gm.GeocoderRequest()..address = newAddress,
+      (results, status) {
+        if (status == gm.GeocoderStatus.OK) {
+          if (results[0] != null) {
+            setState(() {
+              _location = gm.LatLng(
+                results[0].geometry.location.lat,
+                results[0].geometry.location.lng,
+              );
+              _locationLat = _location.lat;
+              _locationLng = _location.lng;
+            });
+          } else {
+            print("No results found");
+          }
+        } else {
+          print("Geocoder failed due to: $status");
+        }
+        setState(() => _waitingGeocodingResponse = false);
+      },
+    );
   }
 }
 

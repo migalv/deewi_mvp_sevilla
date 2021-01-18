@@ -180,21 +180,6 @@ class FirestoreRepository {
     final List<Cuisine> cuisines =
         snapshot.docs.map((doc) => Cuisine.fromFirestore(doc)).toList();
 
-    for (final cuisine in cuisines) {
-      final List<String> dishIds =
-          cuisine.dishes.map((dish) => dish.id).toList();
-      cuisine.dishes = [];
-      for (final dishId in dishIds) {
-        final DocumentSnapshot dishDoc =
-            await _firestore.collection("dishes").doc(dishId).get();
-
-        if (dishDoc.exists) {
-          final Dish dish = Dish.fromFirestore(dishDoc);
-          cuisine.dishes.add(dish);
-        }
-      }
-    }
-
     return cuisines;
   }
 }
