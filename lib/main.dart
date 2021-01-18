@@ -11,7 +11,7 @@ import 'package:mvp_sevilla/theme/deewi_theme.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 
 const bool debugMode = true;
-const bool useEmulator = true;
+const bool useEmulator = false;
 bool noEvents = false;
 
 Future<void> main() async {

@@ -8,6 +8,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mvp_sevilla/main.dart';
 import 'package:mvp_sevilla/models/payment_status.dart';
 import 'package:mvp_sevilla/routes/route_names.dart';
+import 'package:mvp_sevilla/services/location_service.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
@@ -26,6 +27,7 @@ import "dart:math";
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mvp_sevilla/js/fb_pixel.dart';
+import 'package:google_maps/google_maps.dart' as gm;
 
 class CheckoutPage extends StatefulWidget {
   @override
@@ -76,6 +78,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   TextStyle _titleTextStyle;
 
+  bool _isDoingReverseGeocoding;
+
   // Widget measures
 
   ////////////////////
@@ -112,6 +116,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       screenName: "Order Confirmation Page",
       screenClassOverride: "OrderConfirmationPage",
     );
+
     FirebaseAnalytics().logBeginCheckout(
       value: Injector.getAsReactive<Cart>().state.totalPrice,
       currency: "EUR",
@@ -124,6 +129,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
     }
 
+    _isDoingReverseGeocoding = false;
     _isLoadingCheckout = false;
 
     // Initialize contact info maps
@@ -132,6 +138,38 @@ class _CheckoutPageState extends State<CheckoutPage> {
       _contactInfoTimers[key] = null;
       _contactInfoControllers[key] = TextEditingController();
     }
+
+    final geocoder = gm.Geocoder();
+
+    locationService.getLocation().then((response) async {
+      if (response.status == LocationPermissionsStatus.OK) {
+        setState(() => _isDoingReverseGeocoding = true);
+        geocoder.geocode(
+          gm.GeocoderRequest()
+            ..location = gm.LatLng(
+              response.locationData.latitude,
+              response.locationData.longitude,
+            ),
+          (results, status) {
+            if (status == gm.GeocoderStatus.OK) {
+              if (results[0] != null) {
+                setState(() {
+                  _contactInfoControllers[ADDRESS_KEY].text =
+                      results[1].formattedAddress;
+                });
+              } else {
+                print("No results found");
+              }
+            } else {
+              print("Geocoder failed due to: $status");
+            }
+            setState(() => _isDoingReverseGeocoding = false);
+          },
+        );
+      } else {
+        print("ERROR while retrieving location: ${response.status}");
+      }
+    });
 
     orderDoc = FirebaseFirestore.instance.collection("orders").doc();
     _isContactInfoEventSent = false;
@@ -388,9 +426,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         children: [
           _buildHeadline("Datos de contacto"),
           _buildTextField(
-            controller: _contactInfoControllers["name"],
+            controller: _contactInfoControllers[NAME_KEY],
             label: "Nombre",
-            key: "name",
+            key: NAME_KEY,
             icon: Icon(Icons.person),
             keyboardType: TextInputType.name,
             validator: (value) {
@@ -399,9 +437,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
           ),
           _buildTextField(
-            controller: _contactInfoControllers["phone"],
+            controller: _contactInfoControllers[PHONE_KEY],
             label: "Telefono",
-            key: "phone",
+            key: PHONE_KEY,
             icon: Icon(Icons.phone),
             keyboardType: TextInputType.phone,
             inputFormatters: [_phoneMaskFormatter],
@@ -414,9 +452,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
             },
           ),
           _buildTextField(
-            controller: _contactInfoControllers["email"],
-            label: "Email",
-            key: "email",
+            controller: _contactInfoControllers[EMAIL_KEY],
+            label: EMAIL_KEY,
+            key: EMAIL_KEY,
             icon: Icon(Icons.email),
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
@@ -475,45 +513,53 @@ class _CheckoutPageState extends State<CheckoutPage> {
         style: Theme.of(context).textTheme.headline6,
       );
 
-  Widget _buildLocationSection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeadline("Elige la dirección de envio"),
-          Container(
-            constraints: BoxConstraints(maxWidth: _textFieldMaxWidth),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16.0,
-              ),
-              child: TextFormField(
-                controller: _contactInfoControllers["address"],
-                expands: false,
-                decoration: InputDecoration(
-                  labelText: "Dirección",
-                  hintText: "Calle Hong Kong, num 26, piso 3A",
-                  icon: IconButton(
-                    padding: const EdgeInsets.all(0.0),
-                    onPressed: () {},
-                    icon: Icon(Icons.location_on),
-                  ),
-                  border: OutlineInputBorder(),
+  Widget _buildLocationSection() {
+    const double iconButtonWidth = 72.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeadline("Elige la dirección de envio"),
+        Container(
+          constraints: BoxConstraints(maxWidth: _textFieldMaxWidth),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+            child: TextFormField(
+              controller: _contactInfoControllers[ADDRESS_KEY],
+              expands: false,
+              decoration: InputDecoration(
+                labelText: "Dirección",
+                hintText: "Calle Hong Kong, num 26, piso 3A",
+                icon: IconButton(
+                  padding: const EdgeInsets.all(0.0),
+                  onPressed: () {},
+                  icon: Icon(Icons.location_on),
                 ),
-                onChanged: (value) {
-                  Timer _debounce = _contactInfoTimers["address"];
-                  if (_debounce?.isActive ?? false) _debounce.cancel();
-                  _contactInfoTimers["address"] = Timer(Duration(seconds: 1),
-                      () => _registerTextField("address"));
-                },
-                keyboardType: TextInputType.streetAddress,
-                validator: (value) {
-                  if (value.isEmpty) return 'Porfavor introduce una dirección';
-                  return null;
-                },
+                border: OutlineInputBorder(),
               ),
+              onChanged: (value) {
+                Timer _debounce = _contactInfoTimers[ADDRESS_KEY];
+                if (_debounce?.isActive ?? false) _debounce.cancel();
+                _contactInfoTimers[ADDRESS_KEY] = Timer(Duration(seconds: 1),
+                    () => _registerTextField(ADDRESS_KEY));
+              },
+              keyboardType: TextInputType.streetAddress,
+              validator: (value) {
+                if (value.isEmpty) return 'Porfavor introduce una dirección';
+                return null;
+              },
             ),
           ),
-        ],
-      );
+        ),
+        _isDoingReverseGeocoding
+            ? Padding(
+                padding:
+                    const EdgeInsets.only(left: iconButtonWidth, right: 16.0),
+                child: LinearProgressIndicator(),
+              )
+            : Container(),
+      ],
+    );
+  }
 
   Widget _buildOrderDetailsContainer({double containerWidth}) {
     final showSecurePaymentBadges =
@@ -979,10 +1025,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
       orderDoc.set(
         {
           "items": _itemList,
-          "client_address": _contactInfoControllers["address"].text,
-          "client_name": _contactInfoControllers["name"].text,
-          "client_email": _contactInfoControllers["email"].text,
-          "client_phone": _contactInfoControllers["phone"].text,
+          "client_address": _contactInfoControllers[ADDRESS_KEY].text,
+          "client_name": _contactInfoControllers[NAME_KEY].text,
+          "client_email": _contactInfoControllers[EMAIL_KEY].text,
+          "client_phone": _contactInfoControllers[PHONE_KEY].text,
           "total_price": cart.totalPrice,
           "delivery_time": _orderTime.millisecondsSinceEpoch,
           "created_at": FieldValue.serverTimestamp(),

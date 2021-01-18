@@ -1,6 +1,7 @@
 import 'package:mvp_sevilla/models/cuisine_model.dart';
 import 'package:mvp_sevilla/pages/cart_page.dart';
 import 'package:mvp_sevilla/services/firestore_repository.dart';
+import 'package:mvp_sevilla/services/location_service.dart';
 import 'package:mvp_sevilla/widgets/cart_button.dart';
 import 'package:mvp_sevilla/widgets/cart_fab.dart';
 import 'package:mvp_sevilla/widgets/cuisine_card.dart';
@@ -51,6 +52,9 @@ class _HomePageState extends State<HomePage> {
       screenName: "Home Page",
       screenClassOverride: "HomePage",
     );
+
+    locationService.getLocation();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       showDialog(
         context: context,
