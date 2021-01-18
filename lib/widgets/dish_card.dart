@@ -1,6 +1,7 @@
 import 'package:mvp_sevilla/models/dish_model.dart';
 import 'package:mvp_sevilla/pages/dish_page.dart';
 import 'package:flutter/material.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 
 class DishCard extends StatelessWidget {
   final Dish dish;
@@ -26,18 +27,18 @@ class DishCard extends StatelessWidget {
         child: InkWell(
           onTap: isClickable
               ? isPhone
-                  ? () => Navigator.push(
+                  ? () => Navigator.pushNamed(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => DishPage(dish: dish),
-                          settings: RouteSettings(name: "Dish Page"),
-                        ),
+                        Uri(
+                          path: RouteNames.DISH_ROUTE,
+                          queryParameters: {"id": dish.id},
+                        ).toString(),
                       )
                   : () => showDialog(
                         context: context,
-                        builder: (_) {
-                          return Dialog(child: DishPage(dish: dish));
-                        },
+                        builder: (_) => Dialog(
+                          child: DishPage(dishId: dish.id),
+                        ),
                       )
               : null,
           child: Ink(

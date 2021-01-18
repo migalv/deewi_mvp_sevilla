@@ -1,12 +1,12 @@
 import 'dart:ui';
 
-import 'package:mvp_sevilla/pages/faqs_page.dart';
 import 'package:flutter/material.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 
 class MoreInfoButton extends StatelessWidget {
   final double maxWidth;
 
-  const MoreInfoButton({Key key, this.maxWidth = 120.0}) : super(key: key);
+  const MoreInfoButton({Key key, this.maxWidth = 136.0}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,13 +17,7 @@ class MoreInfoButton extends StatelessWidget {
         color: Colors.black.withOpacity(0.04),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FAQsPage(),
-              settings: RouteSettings(name: "FAQs Page"),
-            ),
-          ),
+          onTap: () => Navigator.pushNamed(context, RouteNames.FAQS_ROUTE),
           child: Padding(
             padding: const EdgeInsets.all(4.0),
             child: Ink(

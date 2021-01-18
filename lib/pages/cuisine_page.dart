@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mvp_sevilla/models/cuisine_model.dart';
-import 'package:mvp_sevilla/models/dish_model.dart';
 import 'package:mvp_sevilla/pages/cart_page.dart';
-import 'package:mvp_sevilla/pages/home_page.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 import 'package:mvp_sevilla/widgets/cart_button.dart';
 import 'package:mvp_sevilla/widgets/cart_fab.dart';
 import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
@@ -9,13 +9,13 @@ import 'package:mvp_sevilla/widgets/dish_card.dart';
 import 'package:mvp_sevilla/widgets/more_info_buton.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
+import 'package:mvp_sevilla/widgets/unknown_error_widget.dart';
 
 class CuisinePage extends StatefulWidget {
-  final List<Dish> dishes;
-  final Cuisine cuisine;
+  /// Firestore id for the Cuisine
+  final String cuisineId;
 
-  const CuisinePage({Key key, @required this.cuisine, @required this.dishes})
-      : super(key: key);
+  const CuisinePage({Key key, this.cuisineId}) : super(key: key);
 
   @override
   _CuisinePageState createState() => _CuisinePageState();
@@ -35,9 +35,43 @@ class _CuisinePageState extends State<CuisinePage> {
 
   TextStyle _titleTextStyle;
 
+  /// If the view is loading / waiting for the Firestore data
+  bool _isLoading;
+
+  /// The cuisine model for this Cuisine Page
+  Cuisine _cuisine;
+
+  /// If an error ocurred
+  bool _hasError;
+
   @override
   void initState() {
-    FirebaseAnalytics().logViewItemList(itemCategory: widget.cuisine.name);
+    _isLoading = true;
+    _hasError = false;
+
+    try {
+      FirebaseFirestore.instance
+          .collection("cuisines")
+          .doc(widget.cuisineId)
+          .get()
+          .then((doc) {
+        if (doc.exists) {
+          setState(() {
+            _cuisine = Cuisine.fromFirestore(doc);
+            _isLoading = false;
+          });
+          FirebaseAnalytics().logViewItemList(itemCategory: _cuisine.name);
+        } else {
+          setState(() {
+            _hasError = true;
+            _isLoading = false;
+          });
+        }
+      });
+    } catch (e) {
+      setState(() => _hasError = true);
+    }
+
     FirebaseAnalytics().setCurrentScreen(
       screenName: "Cuisine Page",
       screenClassOverride: "CuisinePage",
@@ -76,35 +110,39 @@ class _CuisinePageState extends State<CuisinePage> {
     if (_screenWidth <= 450) _itemCount = 1;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          Container(
-            width: _screenWidth,
-            height: _screenHeight,
-            color: Colors.black,
-          ),
-          Opacity(
-            opacity: 0.4,
-            child: Image.asset(
-              widget.cuisine.thumbnailImagePath ?? widget.cuisine.imagePath,
-              width: _screenWidth,
-              height: _screenHeight,
-              fit: BoxFit.cover,
+      body: _hasError
+          ? UnknownErrorWidget()
+          : Stack(
+              children: [
+                Container(
+                  width: _screenWidth,
+                  height: _screenHeight,
+                  color: Colors.black,
+                ),
+                _isLoading
+                    ? Container()
+                    : Opacity(
+                        opacity: 0.4,
+                        child: Image.asset(
+                          _cuisine.thumbnailImagePath ?? _cuisine.imagePath,
+                          width: _screenWidth,
+                          height: _screenHeight,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                _buildLogo(),
+                _buildTitle(),
+                ListView(
+                  children: [
+                    SizedBox(height: _bannerHeight),
+                    _buildDishList(),
+                  ],
+                ),
+                DiscountCountdownBar(),
+                CartPage(),
+                CartButton(),
+              ],
             ),
-          ),
-          _buildLogo(),
-          _buildTitle(),
-          ListView(
-            children: [
-              SizedBox(height: _bannerHeight),
-              _buildDishList(),
-            ],
-          ),
-          DiscountCountdownBar(),
-          CartPage(),
-          CartButton(),
-        ],
-      ),
       floatingActionButton: CartFAB(),
     );
   }
@@ -117,13 +155,7 @@ class _CuisinePageState extends State<CuisinePage> {
             left: _isPhone ? 0.0 : 24.0,
           ),
           child: InkWell(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => HomePage(),
-                settings: RouteSettings(name: "Home Page"),
-              ),
-            ),
+            onTap: () => Navigator.pushNamed(context, RouteNames.HOME_ROUTE),
             child: Ink(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -154,7 +186,7 @@ class _CuisinePageState extends State<CuisinePage> {
                   ),
                   child: FittedBox(
                     child: Text(
-                      "${widget.cuisine.name}",
+                      _isLoading ? "..." : "${_cuisine.name}",
                       style: _titleTextStyle,
                     ),
                   ),
@@ -170,7 +202,7 @@ class _CuisinePageState extends State<CuisinePage> {
                   child: FittedBox(
                     fit: BoxFit.fitWidth,
                     child: Text(
-                      "${widget.cuisine.name}",
+                      _isLoading ? "..." : "${_cuisine.name}",
                       style: _titleTextStyle,
                     ),
                   ),
@@ -226,19 +258,21 @@ class _CuisinePageState extends State<CuisinePage> {
                 ),
               ],
             ),
-            GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _itemCount,
-                childAspectRatio: 1,
-              ),
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: widget.dishes.length,
-              padding: const EdgeInsets.all(16.0),
-              // crossAxisCount: _itemCount,
-              // childAspectRatio: 1,
-              itemBuilder: (_, i) => DishCard(dish: widget.dishes[i]),
-            ),
+            _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: _itemCount,
+                      childAspectRatio: 1,
+                    ),
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: _cuisine.dishes.length,
+                    padding: const EdgeInsets.all(16.0),
+                    // crossAxisCount: _itemCount,
+                    // childAspectRatio: 1,
+                    itemBuilder: (_, i) => DishCard(dish: _cuisine.dishes[i]),
+                  ),
             SizedBox(height: 48.0),
           ],
         ),

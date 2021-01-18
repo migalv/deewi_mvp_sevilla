@@ -1,4 +1,5 @@
-import 'package:mvp_sevilla/pages/home_page.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
+import 'package:mvp_sevilla/routes/router.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -6,9 +7,11 @@ import 'package:firebase_analytics/observer.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:mvp_sevilla/theme/deewi_theme.dart';
 import 'package:states_rebuilder/states_rebuilder.dart';
 
-const bool debugMode = false;
+const bool debugMode = true;
+const bool useEmulator = false;
 bool noEvents = false;
 
 Future<void> main() async {
@@ -36,46 +39,22 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Deewi | Prueba comida casera",
+      title: "Deewi | Prueba auténtica multicultural",
       debugShowCheckedModeBanner: false,
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child,
-      ),
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics()),
       ],
-      theme: ThemeData.light().copyWith(
-        primaryColor: Colors.amber,
-        accentColor: Colors.amber,
-        colorScheme: ColorScheme(
-          primary: Colors.amber,
-          primaryVariant: Colors.amber,
-          secondary: ThemeData.light().colorScheme.secondary,
-          secondaryVariant: ThemeData.light().colorScheme.secondaryVariant,
-          background: ThemeData.light().colorScheme.background,
-          surface: ThemeData.light().colorScheme.surface,
-          error: ThemeData.light().errorColor,
-          onPrimary: ThemeData.light().colorScheme.onPrimary,
-          onSecondary: ThemeData.light().colorScheme.onSecondary,
-          onBackground: ThemeData.light().colorScheme.onBackground,
-          onSurface: ThemeData.light().colorScheme.onSurface,
-          onError: ThemeData.light().colorScheme.onError,
-          brightness: ThemeData.light().colorScheme.brightness,
+      theme: DeewiTheme().themeData,
+      initialRoute: RouteNames.HOME_ROUTE,
+      onGenerateRoute: RouteGenerator.generateRoute,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: Injector(
+          inject: [
+            Inject<Cart>(() => Cart()),
+          ],
+          builder: (_) => child,
         ),
-        buttonTheme: ButtonThemeData(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 8.0,
-          ),
-          buttonColor: Colors.amber,
-        ),
-      ),
-      home: Injector(
-        inject: [
-          Inject<Cart>(() => Cart()),
-        ],
-        builder: (_) => HomePage(),
       ),
     );
   }

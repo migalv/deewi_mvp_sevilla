@@ -3,7 +3,12 @@ import 'dart:async';
 import 'package:calendar_strip/calendar_strip.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mvp_sevilla/core/utils.dart';
+import 'package:mvp_sevilla/js/stripe.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:mvp_sevilla/main.dart';
+import 'package:mvp_sevilla/models/payment_status.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
+import 'package:mvp_sevilla/services/location_service.dart';
 import 'package:mvp_sevilla/services/remote_config_service.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:mvp_sevilla/widgets/discount_countdown_bar.dart';
@@ -22,13 +27,14 @@ import "dart:math";
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:mvp_sevilla/js/fb_pixel.dart';
+import 'package:google_maps/google_maps.dart' as gm;
 
-class OrderConfirmationPage extends StatefulWidget {
+class CheckoutPage extends StatefulWidget {
   @override
-  _OrderConfirmationPageState createState() => _OrderConfirmationPageState();
+  _CheckoutPageState createState() => _CheckoutPageState();
 }
 
-class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
+class _CheckoutPageState extends State<CheckoutPage> {
   DateTime _orderTime;
 
   final _formKey = GlobalKey<FormState>();
@@ -37,12 +43,21 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
   bool _isContactInfoEventSent;
 
-  final List<String> _contactInfoKeys = const [
-    "name",
-    "phone",
-    "email",
-    "address",
+  bool _isLoadingCheckout;
+
+  static const List<String> _contactInfoKeys = const [
+    NAME_KEY,
+    PHONE_KEY,
+    EMAIL_KEY,
+    ADDRESS_KEY,
   ];
+
+  FirebaseFunctions _firebaseFunctionsInstance;
+
+  static const String NAME_KEY = "name";
+  static const String PHONE_KEY = "phone";
+  static const String EMAIL_KEY = "email";
+  static const String ADDRESS_KEY = "address";
 
   Map<String, bool> _contactInfoEvents = {};
 
@@ -62,6 +77,8 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
   );
 
   TextStyle _titleTextStyle;
+
+  bool _isDoingReverseGeocoding;
 
   // Widget measures
 
@@ -88,10 +105,18 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
   @override
   void initState() {
+    _firebaseFunctionsInstance =
+        FirebaseFunctions.instanceFor(region: 'europe-west2');
+
+    _firebaseFunctionsInstance.useFunctionsEmulator(
+      origin: useEmulator ? "http://localhost:5001" : null,
+    );
+
     FirebaseAnalytics().setCurrentScreen(
       screenName: "Order Confirmation Page",
       screenClassOverride: "OrderConfirmationPage",
     );
+
     FirebaseAnalytics().logBeginCheckout(
       value: Injector.getAsReactive<Cart>().state.totalPrice,
       currency: "EUR",
@@ -104,12 +129,47 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
       );
     }
 
+    _isDoingReverseGeocoding = false;
+    _isLoadingCheckout = false;
+
     // Initialize contact info maps
     for (final key in _contactInfoKeys) {
       _contactInfoEvents[key] = false;
       _contactInfoTimers[key] = null;
       _contactInfoControllers[key] = TextEditingController();
     }
+
+    final geocoder = gm.Geocoder();
+
+    locationService.getLocation().then((response) async {
+      if (response.status == LocationPermissionsStatus.OK) {
+        setState(() => _isDoingReverseGeocoding = true);
+        geocoder.geocode(
+          gm.GeocoderRequest()
+            ..location = gm.LatLng(
+              response.locationData.latitude,
+              response.locationData.longitude,
+            ),
+          (results, status) {
+            if (status == gm.GeocoderStatus.OK) {
+              if (results[0] != null) {
+                setState(() {
+                  _contactInfoControllers[ADDRESS_KEY].text =
+                      results[1].formattedAddress;
+                });
+              } else {
+                print("No results found");
+              }
+            } else {
+              print("Geocoder failed due to: $status");
+            }
+            setState(() => _isDoingReverseGeocoding = false);
+          },
+        );
+      } else {
+        print("ERROR while retrieving location: ${response.status}");
+      }
+    });
 
     orderDoc = FirebaseFirestore.instance.collection("orders").doc();
     _isContactInfoEventSent = false;
@@ -199,12 +259,19 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
     return Scaffold(
       body: Stack(
         children: [
-          Image.asset(
-            "assets/images/home_banner.jpg",
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF701A98),
+                  Color(0xFFDF4577),
+                ],
+              ),
+            ),
             width: _screenWidth,
             height: _screenHeight,
-            fit: BoxFit.cover,
-            alignment: Alignment(0.0, -0.45),
           ),
           _buildLogo(),
           Center(child: _buildMainContainer()),
@@ -359,9 +426,9 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
         children: [
           _buildHeadline("Datos de contacto"),
           _buildTextField(
-            controller: _contactInfoControllers["name"],
+            controller: _contactInfoControllers[NAME_KEY],
             label: "Nombre",
-            key: "name",
+            key: NAME_KEY,
             icon: Icon(Icons.person),
             keyboardType: TextInputType.name,
             validator: (value) {
@@ -370,9 +437,9 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
             },
           ),
           _buildTextField(
-            controller: _contactInfoControllers["phone"],
+            controller: _contactInfoControllers[PHONE_KEY],
             label: "Telefono",
-            key: "phone",
+            key: PHONE_KEY,
             icon: Icon(Icons.phone),
             keyboardType: TextInputType.phone,
             inputFormatters: [_phoneMaskFormatter],
@@ -385,9 +452,9 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
             },
           ),
           _buildTextField(
-            controller: _contactInfoControllers["email"],
-            label: "Email",
-            key: "email",
+            controller: _contactInfoControllers[EMAIL_KEY],
+            label: EMAIL_KEY,
+            key: EMAIL_KEY,
             icon: Icon(Icons.email),
             keyboardType: TextInputType.emailAddress,
             validator: (value) {
@@ -446,45 +513,53 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
         style: Theme.of(context).textTheme.headline6,
       );
 
-  Widget _buildLocationSection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeadline("Elige la dirección de envio"),
-          Container(
-            constraints: BoxConstraints(maxWidth: _textFieldMaxWidth),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16.0,
-              ),
-              child: TextFormField(
-                controller: _contactInfoControllers["address"],
-                expands: false,
-                decoration: InputDecoration(
-                  labelText: "Dirección",
-                  hintText: "Calle Hong Kong, num 26, piso 3A",
-                  icon: IconButton(
-                    padding: const EdgeInsets.all(0.0),
-                    onPressed: () {},
-                    icon: Icon(Icons.location_on),
-                  ),
-                  border: OutlineInputBorder(),
+  Widget _buildLocationSection() {
+    const double iconButtonWidth = 72.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeadline("Elige la dirección de envio"),
+        Container(
+          constraints: BoxConstraints(maxWidth: _textFieldMaxWidth),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 4.0),
+            child: TextFormField(
+              controller: _contactInfoControllers[ADDRESS_KEY],
+              expands: false,
+              decoration: InputDecoration(
+                labelText: "Dirección",
+                hintText: "Calle Hong Kong, num 26, piso 3A",
+                icon: IconButton(
+                  padding: const EdgeInsets.all(0.0),
+                  onPressed: () {},
+                  icon: Icon(Icons.location_on),
                 ),
-                onChanged: (value) {
-                  Timer _debounce = _contactInfoTimers["address"];
-                  if (_debounce?.isActive ?? false) _debounce.cancel();
-                  _contactInfoTimers["address"] = Timer(Duration(seconds: 1),
-                      () => _registerTextField("address"));
-                },
-                keyboardType: TextInputType.streetAddress,
-                validator: (value) {
-                  if (value.isEmpty) return 'Porfavor introduce una dirección';
-                  return null;
-                },
+                border: OutlineInputBorder(),
               ),
+              onChanged: (value) {
+                Timer _debounce = _contactInfoTimers[ADDRESS_KEY];
+                if (_debounce?.isActive ?? false) _debounce.cancel();
+                _contactInfoTimers[ADDRESS_KEY] = Timer(Duration(seconds: 1),
+                    () => _registerTextField(ADDRESS_KEY));
+              },
+              keyboardType: TextInputType.streetAddress,
+              validator: (value) {
+                if (value.isEmpty) return 'Porfavor introduce una dirección';
+                return null;
+              },
             ),
           ),
-        ],
-      );
+        ),
+        _isDoingReverseGeocoding
+            ? Padding(
+                padding:
+                    const EdgeInsets.only(left: iconButtonWidth, right: 16.0),
+                child: LinearProgressIndicator(),
+              )
+            : Container(),
+      ],
+    );
+  }
 
   Widget _buildOrderDetailsContainer({double containerWidth}) {
     final showSecurePaymentBadges =
@@ -587,7 +662,7 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
           padding: const EdgeInsets.all(16.0),
           child: Material(
             child: InkWell(
-              onTap: () => _pay(rmCart),
+              onTap: _isLoadingCheckout ? null : () => _pay(rmCart),
               child: Ink(
                 padding:
                     const EdgeInsets.symmetric(vertical: 8.0, horizontal: 40.0),
@@ -595,24 +670,30 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(8.0),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.payment,
-                      color: Colors.white,
-                      size: 24.0,
-                    ),
-                    SizedBox(width: 8.0),
-                    Text(
-                      "Pagar",
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline5
-                          .copyWith(color: Colors.white),
-                    ),
-                  ],
-                ),
+                child: _isLoadingCheckout
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.payment,
+                            color: Colors.white,
+                            size: 24.0,
+                          ),
+                          SizedBox(width: 8.0),
+                          Text(
+                            "Pagar",
+                            style: Theme.of(context)
+                                .textTheme
+                                .headline5
+                                .copyWith(color: Colors.white),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
@@ -812,18 +893,20 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
 
                         state.didChange(selectedDate);
 
-                        orderDoc.set(
-                          {
-                            "delivery_time":
-                                selectedDate.millisecondsSinceEpoch,
-                            "client_uid":
-                                FirebaseAuth.instance?.currentUser?.uid,
-                            "total_price": _rmCart.state.totalPrice,
-                            "item_list": _itemList,
-                            "created_at": FieldValue.serverTimestamp(),
-                          },
-                          SetOptions(merge: true),
-                        );
+                        if (noEvents == false) {
+                          orderDoc.set(
+                            {
+                              "delivery_time":
+                                  selectedDate.millisecondsSinceEpoch,
+                              "client_uid":
+                                  FirebaseAuth.instance?.currentUser?.uid,
+                              "total_price": _rmCart.state.totalPrice,
+                              "item_list": _itemList,
+                              "created_at": FieldValue.serverTimestamp(),
+                            },
+                            SetOptions(merge: true),
+                          );
+                        }
 
                         setState(() => _orderTime = selectedDate);
                       }
@@ -939,115 +1022,85 @@ class _OrderConfirmationPageState extends State<OrderConfirmationPage> {
     );
 
     if (isFormValid) {
-      List<Map> itemList;
-
-      itemList = cart.dishes.entries
-          .map(
-            (entry) => {
-              "units": entry.value,
-              "dish": entry.key.toOrderItem(),
-            },
-          )
-          .toList();
-      if (noEvents == false) {
-        logFBPixelEvents(
-          "track",
-          "Purchase",
-          FBParams(
-            currency: "EUR",
-            value: cart.totalPrice,
-          ),
-        );
-      }
-
-      FirebaseAnalytics().logEcommercePurchase(
-        value: cart.totalPrice,
-        currency: "EUR",
-      );
-
       orderDoc.set(
         {
-          "items": itemList,
-          "client_address": _contactInfoControllers["address"].text,
-          "client_name": _contactInfoControllers["name"].text,
-          "client_email": _contactInfoControllers["email"].text,
-          "client_phone": _contactInfoControllers["phone"].text,
+          "items": _itemList,
+          "client_address": _contactInfoControllers[ADDRESS_KEY].text,
+          "client_name": _contactInfoControllers[NAME_KEY].text,
+          "client_email": _contactInfoControllers[EMAIL_KEY].text,
+          "client_phone": _contactInfoControllers[PHONE_KEY].text,
           "total_price": cart.totalPrice,
           "delivery_time": _orderTime.millisecondsSinceEpoch,
           "created_at": FieldValue.serverTimestamp(),
           "client_uid": FirebaseAuth.instance?.currentUser?.uid,
         },
+        SetOptions(merge: true),
       );
 
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(
-              "¡Gracias por pedir en Deewi!",
-              textAlign: TextAlign.center,
-            ),
-            content: Container(
-              constraints: BoxConstraints(maxWidth: 300.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Actualmente aún estamos en construcción 🏗️",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Y nos ayudaría un montón conocer tu opinión.",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 4.0),
-                  Text(
-                    "Puede ser que te contactemos para charlar unos minutos 😊",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8.0),
-                  Text(
-                    "Como ya nos conocemos, te dejamos este código:",
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 8.0),
-                  FittedBox(
-                    child: Text(
-                      "SOYDELOSPRIMEROS",
-                      style: Theme.of(context).textTheme.headline4,
-                    ),
-                  ),
-                  SizedBox(height: 8.0),
-                  Text(
-                    "Utilizalo en tu siguiente pedido y tendremos un regalo para tí.",
-                    style: Theme.of(context).textTheme.caption,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              FlatButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                  rmCart.setState((cart) => cart.clear());
-                },
-                child: Text("Cerrar"),
-              ),
-            ],
-          );
-        },
-      );
+      _redirectToCheckout();
     } else
       setState(() => _formHasErrors = true);
   }
 
+  void _redirectToCheckout() async {
+    try {
+      setState(() {
+        _isLoadingCheckout = true;
+      });
+      final response = await _firebaseFunctionsInstance
+          .httpsCallable("createStripeCheckoutSession")
+          .call({
+        "is_test": debugMode,
+        "session_params": {
+          "payment_method_types": ['card'],
+          "mode": 'payment',
+          "line_items": _itemList
+              .map((item) => {
+                    "price": item["dish"]["stripe_price_id"],
+                    "quantity": item["units"],
+                  })
+              .toList(),
+          "customer_email": _contactInfoControllers[EMAIL_KEY].text,
+          "success_url": Uri.base
+              .toString()
+              .replaceAll("/checkout", RouteNames.SUCCESS_ROUTE),
+          "cancel_url": Uri.base.toString(),
+        }
+      });
+
+      if (response.data["error"] == null) {
+        final String checkoutSessionId = response.data["session_id"];
+        Stripe stripe = Stripe(
+          debugMode
+              ? STRIPE_PUBLISHABLE_TEST_API_KEY
+              : STRIPE_PUBLISHABLE_API_KEY,
+        );
+
+        orderDoc.set(
+          {
+            "stripe_checkout_session_id": checkoutSessionId,
+            "payment_status": PaymentStatus.waiting,
+          },
+          SetOptions(merge: true),
+        );
+
+        await stripe
+            .redirectToCheckout(CheckoutOptions(sessionId: checkoutSessionId));
+      } else {
+        print(response.data["error"]);
+      }
+    } catch (e, s) {
+      print("Error: ${e.toString()}");
+      print("StackTrace: ${s.toString()}");
+    }
+
+    setState(() {
+      _isLoadingCheckout = true;
+    });
+  }
+
   void _registerTextField(String key) {
-    if (_contactInfoControllers[key].text != "") {
+    if (_contactInfoControllers[key].text != "" && noEvents == false) {
       orderDoc.set(
         {
           "client_$key": _contactInfoControllers[key].text,

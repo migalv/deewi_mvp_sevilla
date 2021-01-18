@@ -1,4 +1,4 @@
-import 'package:mvp_sevilla/pages/order_confirmation_page.dart';
+import 'package:mvp_sevilla/routes/route_names.dart';
 import 'package:mvp_sevilla/stores/cart.dart';
 import 'package:mvp_sevilla/widgets/item_tile.dart';
 import 'package:flutter/material.dart';
@@ -132,13 +132,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(16.0),
             child: Material(
               child: InkWell(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderConfirmationPage(),
-                    settings: RouteSettings(name: "Order Confirmation Page"),
-                  ),
-                ),
+                onTap: () =>
+                    Navigator.pushNamed(context, RouteNames.CHECKOUT_ROUTE),
                 child: Ink(
                   padding: const EdgeInsets.symmetric(
                       vertical: 8.0, horizontal: 40.0),
